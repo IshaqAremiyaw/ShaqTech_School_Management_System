@@ -1,10 +1,141 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>ShaqTech Portfolio</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ShaqTech International School — Login</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 </head>
-<body>
-  <h1>Welcome to ShaqTech!</h1>
-  <p>Your site is working.</p>
+<body class="login-page">
+
+  <div class="login-bg">
+    <div class="login-shapes">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+    </div>
+  </div>
+
+  <div class="login-wrapper">
+    <div class="login-left">
+      <div class="login-brand">
+        <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
+        <h1>ShaqTech<span>IMS</span></h1>
+        <p>ShaqTech International School</p>
+      </div>
+      <div class="login-features">
+        <div class="feature-item"><i class="fas fa-users"></i><span>Student & Teacher Management</span></div>
+        <div class="feature-item"><i class="fas fa-chart-bar"></i><span>Results & Analytics</span></div>
+        <div class="feature-item"><i class="fas fa-calendar-check"></i><span>Attendance Tracking</span></div>
+        <div class="feature-item"><i class="fas fa-money-bill-wave"></i><span>Fee Management</span></div>
+      </div>
+    </div>
+
+    <div class="login-right">
+      <div class="login-card">
+        <div class="login-header">
+          <h2>Welcome Back</h2>
+          <p>Sign in to your admin account</p>
+        </div>
+
+        <form id="loginForm" novalidate>
+          <div class="form-group">
+            <label for="username">Username</label>
+            <div class="input-wrap">
+              <i class="fas fa-user"></i>
+              <input type="text" id="username" placeholder="Enter your username" autocomplete="off"/>
+            </div>
+            <span class="err-msg" id="usernameErr"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <div class="input-wrap">
+              <i class="fas fa-lock"></i>
+              <input type="password" id="password" placeholder="Enter your password"/>
+              <button type="button" class="toggle-pass" onclick="togglePassword()">
+                <i class="fas fa-eye" id="passEyeIcon"></i>
+              </button>
+            </div>
+            <span class="err-msg" id="passwordErr"></span>
+          </div>
+
+          <div class="form-extras">
+            <label class="checkbox-wrap">
+              <input type="checkbox" id="rememberMe"/>
+              <span class="checkmark"></span>
+              Remember me
+            </label>
+            <a href="#" class="forgot-link">Forgot password?</a>
+          </div>
+
+          <button type="submit" class="btn-login" id="loginBtn">
+            <span>Sign In</span>
+            <i class="fas fa-arrow-right"></i>
+          </button>
+
+          <div class="login-hint">
+            <i class="fas fa-info-circle"></i>
+            Login: <strong>Admin</strong> / <strong>Starzio68</strong>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    // Login page specific
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value.trim();
+      let valid = true;
+
+      document.getElementById('usernameErr').textContent = '';
+      document.getElementById('passwordErr').textContent = '';
+
+      if (!username) {
+        document.getElementById('usernameErr').textContent = 'Username is required.';
+        valid = false;
+      }
+      if (!password) {
+        document.getElementById('passwordErr').textContent = 'Password is required.';
+        valid = false;
+      }
+      if (!valid) return;
+
+      const btn = document.getElementById('loginBtn');
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
+      btn.disabled = true;
+
+      setTimeout(() => {
+        if (username === 'Admin' && password === 'Starzio68') {
+          localStorage.setItem('sms_logged_in', 'true');
+          localStorage.setItem('sms_user', username);
+          SMS.initSampleData();
+          window.location.href = 'dashboard.html';
+        } else {
+          btn.innerHTML = '<span>Sign In</span><i class="fas fa-arrow-right"></i>';
+          btn.disabled = false;
+          document.getElementById('passwordErr').textContent = 'Invalid username or password.';
+        }
+      }, 800);
+    });
+
+    function togglePassword() {
+      const p = document.getElementById('password');
+      const icon = document.getElementById('passEyeIcon');
+      if (p.type === 'password') {
+        p.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+      } else {
+        p.type = 'password';
+        icon.className = 'fas fa-eye';
+      }
+    }
+  </script>
 </body>
 </html>
