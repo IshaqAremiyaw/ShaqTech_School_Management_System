@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ShaqTech International School — Dashboard</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body class="app-body">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
+      <div class="brand-text"><span class="b1">ShaqTech</span><span class="b2">IMS</span></div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">MAIN</div>
+      <a href="dashboard.html" class="nav-item active"><i class="fas fa-th-large"></i><span>Dashboard</span></a>
+      <a href="students.html" class="nav-item"><i class="fas fa-user-graduate"></i><span>Students</span></a>
+      <a href="teachers.html" class="nav-item"><i class="fas fa-chalkboard-teacher"></i><span>Teachers</span></a>
+
+      <div class="nav-section-label">ACADEMICS</div>
+      <a href="classes.html" class="nav-item"><i class="fas fa-school"></i><span>Classes</span></a>
+      <a href="subjects.html" class="nav-item"><i class="fas fa-book"></i><span>Subjects</span></a>
+      <a href="attendance.html" class="nav-item"><i class="fas fa-calendar-check"></i><span>Attendance</span></a>
+      <a href="results.html" class="nav-item"><i class="fas fa-chart-line"></i><span>Results</span></a>
+
+      <div class="nav-section-label">ADMIN</div>
+      <a href="fees.html" class="nav-item"><i class="fas fa-money-bill-wave"></i><span>Fees</span></a>
+      <a href="announcements.html" class="nav-item"><i class="fas fa-bullhorn"></i><span>Announcements</span></a>
+      <a href="reports.html" class="nav-item"><i class="fas fa-file-alt"></i><span>Reports</span></a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="dark-toggle" onclick="SMS.toggleDark()">
+        <i class="fas fa-moon" id="darkIcon"></i><span>Dark Mode</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="main-wrap">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-toggle" onclick="SMS.toggleSidebar()"><i class="fas fa-bars"></i></button>
+        <div class="page-title">
+          <h2>Dashboard</h2>
+          <span>Overview of school activities</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="topbar-btn" title="Notifications"><i class="fas fa-bell"></i><span class="badge">3</span></button>
+        <div class="user-chip">
+          <div class="user-avatar"><i class="fas fa-user"></i></div>
+          <div class="user-info">
+            <span class="user-name" id="topbarUser">Admin</span>
+            <span class="user-role">Administrator</span>
+          </div>
+        </div>
+        <button class="btn-logout" onclick="SMS.logout()"><i class="fas fa-sign-out-alt"></i><span>Logout</span></button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+        <div class="stat-card card-blue">
+          <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
+          <div class="stat-info">
+            <div class="stat-number" data-target="students">0</div>
+            <div class="stat-label">Total Students</div>
+          </div>
+          <div class="stat-trend"><i class="fas fa-arrow-up"></i> 12%</div>
+        </div>
+        <div class="stat-card card-green">
+          <div class="stat-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+          <div class="stat-info">
+            <div class="stat-number" data-target="teachers">0</div>
+            <div class="stat-label">Total Teachers</div>
+          </div>
+          <div class="stat-trend"><i class="fas fa-arrow-up"></i> 5%</div>
+        </div>
+        <div class="stat-card card-orange">
+          <div class="stat-icon"><i class="fas fa-school"></i></div>
+          <div class="stat-info">
+            <div class="stat-number" data-target="classes">0</div>
+            <div class="stat-label">Total Classes</div>
+          </div>
+          <div class="stat-trend"><i class="fas fa-minus"></i> 0%</div>
+        </div>
+        <div class="stat-card card-purple">
+          <div class="stat-icon"><i class="fas fa-book"></i></div>
+          <div class="stat-info">
+            <div class="stat-number" data-target="subjects">0</div>
+            <div class="stat-label">Total Subjects</div>
+          </div>
+          <div class="stat-trend"><i class="fas fa-arrow-up"></i> 2%</div>
+        </div>
+      </div>
+
+      <!-- Second row -->
+      <div class="dashboard-grid">
+        <!-- Recent Students -->
+        <div class="dash-card">
+          <div class="dash-card-header">
+            <h3><i class="fas fa-user-graduate"></i> Recent Students</h3>
+            <a href="students.html" class="view-all">View All <i class="fas fa-arrow-right"></i></a>
+          </div>
+          <div class="dash-card-body">
+            <table class="mini-table" id="recentStudentsTable">
+              <thead><tr><th>ID</th><th>Name</th><th>Class</th><th>Status</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Announcements -->
+        <div class="dash-card">
+          <div class="dash-card-header">
+            <h3><i class="fas fa-bullhorn"></i> Notice Board</h3>
+            <a href="announcements.html" class="view-all">Manage <i class="fas fa-arrow-right"></i></a>
+          </div>
+          <div class="dash-card-body" id="dashAnnouncements">
+          </div>
+        </div>
+
+        <!-- Fee Summary -->
+        <div class="dash-card">
+          <div class="dash-card-header">
+            <h3><i class="fas fa-money-bill-wave"></i> Fee Summary</h3>
+            <a href="fees.html" class="view-all">View All <i class="fas fa-arrow-right"></i></a>
+          </div>
+          <div class="dash-card-body">
+            <div class="fee-stats">
+              <div class="fee-stat">
+                <div class="fee-stat-label">Total Paid</div>
+                <div class="fee-stat-val paid" id="dashFeePaid">0</div>
+              </div>
+              <div class="fee-stat">
+                <div class="fee-stat-label">Pending</div>
+                <div class="fee-stat-val pending" id="dashFeePending">0</div>
+              </div>
+            </div>
+            <div class="fee-bar-wrap">
+              <div class="fee-bar" id="dashFeeBar" style="width:0%"></div>
+            </div>
+            <div class="fee-bar-label" id="dashFeePercent">0% collected</div>
+          </div>
+        </div>
+
+        <!-- Quick Links -->
+        <div class="dash-card">
+          <div class="dash-card-header">
+            <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+          </div>
+          <div class="dash-card-body">
+            <div class="quick-actions">
+              <a href="students.html" class="quick-btn"><i class="fas fa-user-plus"></i><span>Add Student</span></a>
+              <a href="teachers.html" class="quick-btn"><i class="fas fa-user-tie"></i><span>Add Teacher</span></a>
+              <a href="attendance.html" class="quick-btn"><i class="fas fa-clipboard-check"></i><span>Attendance</span></a>
+              <a href="results.html" class="quick-btn"><i class="fas fa-star"></i><span>Results</span></a>
+              <a href="fees.html" class="quick-btn"><i class="fas fa-receipt"></i><span>Fee Entry</span></a>
+              <a href="reports.html" class="quick-btn"><i class="fas fa-download"></i><span>Reports</span></a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    SMS.checkAuth();
+    SMS.applyTheme();
+    document.getElementById('topbarUser').textContent = localStorage.getItem('sms_user') || 'Admin';
+
+    // Animate counters
+    function animateCounter(el, target) {
+      let cur = 0;
+      const step = Math.ceil(target / 40);
+      const timer = setInterval(() => {
+        cur += step;
+        if (cur >= target) { cur = target; clearInterval(timer); }
+        el.textContent = cur;
+      }, 30);
+    }
+
+    const students = SMS.getData('students');
+    const teachers = SMS.getData('teachers');
+    const classes = SMS.getData('classes');
+    const subjects = SMS.getData('subjects');
+    const fees = SMS.getData('fees');
+    const announcements = SMS.getData('announcements');
+
+    document.querySelectorAll('.stat-number').forEach(el => {
+      const target = el.dataset.target;
+      const map = { students: students.length, teachers: teachers.length, classes: classes.length, subjects: subjects.length };
+      animateCounter(el, map[target] || 0);
+    });
+
+    // Recent students table
+    const tbody = document.querySelector('#recentStudentsTable tbody');
+    students.slice(-5).reverse().forEach(s => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${s.id}</td><td>${s.name}</td><td>${s.class}</td><td><span class="badge-status active">Active</span></td>`;
+      tbody.appendChild(tr);
+    });
+
+    // Announcements
+    const annDiv = document.getElementById('dashAnnouncements');
+    if (announcements.length === 0) {
+      annDiv.innerHTML = '<p class="empty-state">No announcements yet.</p>';
+    } else {
+      announcements.slice(-4).reverse().forEach(a => {
+        annDiv.innerHTML += `<div class="ann-item"><div class="ann-title">${a.title}</div><div class="ann-meta">${a.date} &bull; ${a.category}</div></div>`;
+      });
+    }
+
+    // Fee summary
+    const paid = fees.filter(f => f.status === 'Paid').length;
+    const pending = fees.filter(f => f.status === 'Pending').length;
+    const total = fees.length;
+    const pct = total > 0 ? Math.round((paid / total) * 100) : 0;
+    document.getElementById('dashFeePaid').textContent = paid;
+    document.getElementById('dashFeePending').textContent = pending;
+    document.getElementById('dashFeeBar').style.width = pct + '%';
+    document.getElementById('dashFeePercent').textContent = pct + '% collected';
+  </script>
+</body>
+</html>

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ShaqTech International School — Students</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body class="app-body">
+
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main-wrap">
+    <header class="topbar" id="topbar"></header>
+
+    <main class="page-content">
+      <div class="page-header">
+        <div>
+          <h2>Student Management</h2>
+          <span class="breadcrumb">Dashboard / Students</span>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn-export" onclick="SMS.exportCSV('students')"><i class="fas fa-download"></i> Export CSV</button>
+          <button class="btn-primary" onclick="openStudentModal()"><i class="fas fa-plus"></i> Add Student</button>
+        </div>
+      </div>
+
+      <!-- Search & Filter -->
+      <div class="filter-bar">
+        <div class="search-wrap">
+          <i class="fas fa-search"></i>
+          <input type="text" id="studentSearch" placeholder="Search by name or ID..." oninput="renderStudents()"/>
+        </div>
+        <select id="classFilter" onchange="renderStudents()">
+          <option value="">All Classes</option>
+        </select>
+        <select id="genderFilter" onchange="renderStudents()">
+          <option value="">All Genders</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
+      </div>
+
+      <!-- Table -->
+      <div class="table-card">
+        <table class="data-table" id="studentsTable">
+          <thead>
+            <tr>
+              <th>Student ID</th><th>Full Name</th><th>Gender</th><th>Class</th>
+              <th>Date of Birth</th><th>Parent Contact</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="studentsTbody"></tbody>
+        </table>
+        <div id="studentsEmpty" class="empty-state" style="display:none">
+          <i class="fas fa-user-graduate"></i><p>No students found.</p>
+        </div>
+        <div class="table-footer">
+          <span id="studentCount">0 records</span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="studentModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="studentModalTitle">Add New Student</h3>
+        <button class="modal-close" onclick="closeStudentModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="studentForm" novalidate>
+          <input type="hidden" id="studentEditId"/>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Student ID *</label>
+              <input type="text" id="sId" placeholder="e.g. STU001"/>
+              <span class="err-msg" id="sIdErr"></span>
+            </div>
+            <div class="form-group">
+              <label>Full Name *</label>
+              <input type="text" id="sName" placeholder="Full name"/>
+              <span class="err-msg" id="sNameErr"></span>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Gender *</label>
+              <select id="sGender">
+                <option value="">Select gender</option>
+                <option>Male</option><option>Female</option>
+              </select>
+              <span class="err-msg" id="sGenderErr"></span>
+            </div>
+            <div class="form-group">
+              <label>Class *</label>
+              <select id="sClass">
+                <option value="">Select class</option>
+              </select>
+              <span class="err-msg" id="sClassErr"></span>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Date of Birth *</label>
+              <input type="date" id="sDob"/>
+              <span class="err-msg" id="sDobErr"></span>
+            </div>
+            <div class="form-group">
+              <label>Parent Contact *</label>
+              <input type="text" id="sContact" placeholder="Phone number"/>
+              <span class="err-msg" id="sContactErr"></span>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeStudentModal()">Cancel</button>
+        <button class="btn-primary" onclick="saveStudent()"><i class="fas fa-save"></i> Save Student</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirm Modal -->
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h3><i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i> Confirm Delete</h3>
+        <button class="modal-close" onclick="closeDeleteModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete this student? This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+        <button class="btn-danger" id="confirmDeleteBtn"><i class="fas fa-trash"></i> Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    SMS.checkAuth();
+    SMS.applyTheme();
+    SMS.renderSidebar('sidebar', 'students');
+    SMS.renderTopbar('topbar', 'Student Management');
+
+    // Populate class dropdown
+    const classes = SMS.getData('classes');
+    const classSelects = [document.getElementById('sClass'), document.getElementById('classFilter')];
+    classSelects.forEach(sel => {
+      classes.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.name;
+        opt.textContent = c.name;
+        sel.appendChild(opt);
+      });
+    });
+
+    function renderStudents() {
+      const search = document.getElementById('studentSearch').value.toLowerCase();
+      const cls = document.getElementById('classFilter').value;
+      const gender = document.getElementById('genderFilter').value;
+      let data = SMS.getData('students');
+
+      if (search) data = data.filter(s => s.name.toLowerCase().includes(search) || s.id.toLowerCase().includes(search));
+      if (cls) data = data.filter(s => s.class === cls);
+      if (gender) data = data.filter(s => s.gender === gender);
+
+      const tbody = document.getElementById('studentsTbody');
+      tbody.innerHTML = '';
+      document.getElementById('studentsEmpty').style.display = data.length ? 'none' : 'flex';
+      document.getElementById('studentCount').textContent = data.length + ' record(s)';
+
+      data.forEach(s => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><span class="id-badge">${s.id}</span></td>
+          <td><div class="name-cell"><div class="avatar-sm">${s.name[0]}</div>${s.name}</div></td>
+          <td><span class="gender-badge ${s.gender.toLowerCase()}">${s.gender}</span></td>
+          <td>${s.class}</td>
+          <td>${s.dob}</td>
+          <td>${s.contact}</td>
+          <td class="action-btns">
+            <button class="btn-edit" onclick="editStudent('${s.id}')"><i class="fas fa-edit"></i></button>
+            <button class="btn-del" onclick="confirmDelete('${s.id}')"><i class="fas fa-trash"></i></button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function openStudentModal(editId = null) {
+      document.getElementById('studentForm').reset();
+      clearErrors(['sId','sName','sGender','sClass','sDob','sContact']);
+      document.getElementById('studentEditId').value = editId || '';
+      document.getElementById('studentModalTitle').textContent = editId ? 'Edit Student' : 'Add New Student';
+      if (editId) {
+        const s = SMS.getData('students').find(x => x.id === editId);
+        if (s) {
+          document.getElementById('sId').value = s.id;
+          document.getElementById('sId').disabled = true;
+          document.getElementById('sName').value = s.name;
+          document.getElementById('sGender').value = s.gender;
+          document.getElementById('sClass').value = s.class;
+          document.getElementById('sDob').value = s.dob;
+          document.getElementById('sContact').value = s.contact;
+        }
+      } else {
+        document.getElementById('sId').disabled = false;
+        document.getElementById('sId').value = SMS.generateId('STU', 'students');
+      }
+      document.getElementById('studentModal').classList.add('active');
+    }
+
+    function editStudent(id) { openStudentModal(id); }
+
+    function closeStudentModal() {
+      document.getElementById('studentModal').classList.remove('active');
+      document.getElementById('sId').disabled = false;
+    }
+
+    function saveStudent() {
+      const fields = [
+        {id:'sId', errId:'sIdErr', label:'Student ID'},
+        {id:'sName', errId:'sNameErr', label:'Full Name'},
+        {id:'sGender', errId:'sGenderErr', label:'Gender'},
+        {id:'sClass', errId:'sClassErr', label:'Class'},
+        {id:'sDob', errId:'sDobErr', label:'Date of Birth'},
+        {id:'sContact', errId:'sContactErr', label:'Parent Contact'},
+      ];
+      let valid = true;
+      clearErrors(['sId','sName','sGender','sClass','sDob','sContact']);
+      fields.forEach(f => {
+        if (!document.getElementById(f.id).value.trim()) {
+          document.getElementById(f.errId).textContent = f.label + ' is required.';
+          valid = false;
+        }
+      });
+      if (!valid) return;
+
+      const editId = document.getElementById('studentEditId').value;
+      const student = {
+        id: document.getElementById('sId').value.trim(),
+        name: document.getElementById('sName').value.trim(),
+        gender: document.getElementById('sGender').value,
+        class: document.getElementById('sClass').value,
+        dob: document.getElementById('sDob').value,
+        contact: document.getElementById('sContact').value.trim(),
+      };
+
+      let students = SMS.getData('students');
+      if (editId) {
+        const idx = students.findIndex(s => s.id === editId);
+        if (idx > -1) students[idx] = student;
+      } else {
+        if (students.find(s => s.id === student.id)) {
+          document.getElementById('sIdErr').textContent = 'Student ID already exists.';
+          return;
+        }
+        students.push(student);
+      }
+      SMS.setData('students', students);
+      closeStudentModal();
+      renderStudents();
+      SMS.toast(editId ? 'Student updated successfully!' : 'Student added successfully!');
+    }
+
+    let deleteTargetId = null;
+    function confirmDelete(id) {
+      deleteTargetId = id;
+      document.getElementById('deleteModal').classList.add('active');
+      document.getElementById('confirmDeleteBtn').onclick = () => {
+        let students = SMS.getData('students').filter(s => s.id !== id);
+        SMS.setData('students', students);
+        closeDeleteModal();
+        renderStudents();
+        SMS.toast('Student deleted.', 'warning');
+      };
+    }
+    function closeDeleteModal() { document.getElementById('deleteModal').classList.remove('active'); }
+
+    function clearErrors(ids) { ids.forEach(id => { const el = document.getElementById(id+'Err'); if(el) el.textContent=''; }); }
+
+    renderStudents();
+  </script>
+</body>
+</html>

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ShaqTech International School — Fees</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body class="app-body">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main-wrap">
+    <header class="topbar" id="topbar"></header>
+    <main class="page-content">
+      <div class="page-header">
+        <div><h2>Fee Management</h2><span class="breadcrumb">Dashboard / Fees</span></div>
+        <div class="page-header-actions">
+          <button class="btn-export" onclick="SMS.exportCSV('fees')"><i class="fas fa-download"></i> Export CSV</button>
+          <button class="btn-primary" onclick="openFeeModal()"><i class="fas fa-plus"></i> Add Payment</button>
+        </div>
+      </div>
+
+      <!-- Fee Stats -->
+      <div class="fee-overview">
+        <div class="fee-ov-card paid">
+          <i class="fas fa-check-circle"></i>
+          <div><div class="fov-val" id="fovPaid">0</div><div class="fov-label">Paid</div></div>
+        </div>
+        <div class="fee-ov-card pending">
+          <i class="fas fa-clock"></i>
+          <div><div class="fov-val" id="fovPending">0</div><div class="fov-label">Pending</div></div>
+        </div>
+        <div class="fee-ov-card total">
+          <i class="fas fa-coins"></i>
+          <div><div class="fov-val" id="fovTotal">0</div><div class="fov-label">Total Records</div></div>
+        </div>
+        <div class="fee-ov-card amount">
+          <i class="fas fa-money-bill-wave"></i>
+          <div><div class="fov-val" id="fovAmount">GHS 0</div><div class="fov-label">Amount Collected</div></div>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <div class="search-wrap">
+          <i class="fas fa-search"></i>
+          <input type="text" id="feeSearch" placeholder="Search by student name..." oninput="renderFees()"/>
+        </div>
+        <select id="feeStatusFilter" onchange="renderFees()">
+          <option value="">All Status</option>
+          <option>Paid</option><option>Pending</option>
+        </select>
+        <select id="feeTermFilter" onchange="renderFees()">
+          <option value="">All Terms</option>
+          <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+        </select>
+      </div>
+
+      <div class="table-card">
+        <table class="data-table">
+          <thead><tr><th>Receipt #</th><th>Student Name</th><th>Class</th><th>Fee Type</th><th>Amount</th><th>Term</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="feesTbody"></tbody>
+        </table>
+        <div id="feesEmpty" class="empty-state" style="display:none"><i class="fas fa-receipt"></i><p>No fee records found.</p></div>
+        <div class="table-footer"><span id="feeCount">0 records</span></div>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-overlay" id="feeModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="feeModalTitle">Add Fee Payment</h3>
+        <button class="modal-close" onclick="closeFeeModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="feeForm">
+          <input type="hidden" id="feeEditIdx"/>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Student *</label>
+              <select id="fStudent">
+                <option value="">Select student</option>
+              </select>
+              <span class="err-msg" id="fStudentErr"></span>
+            </div>
+            <div class="form-group">
+              <label>Fee Type *</label>
+              <select id="fType">
+                <option value="">Select type</option>
+                <option>Tuition Fee</option>
+                <option>Examination Fee</option>
+                <option>PTA Fee</option>
+                <option>Sports Fee</option>
+                <option>Library Fee</option>
+                <option>Other</option>
+              </select>
+              <span class="err-msg" id="fTypeErr"></span>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Amount (GHS) *</label>
+              <input type="number" id="fAmount" placeholder="0.00" min="0" step="0.01"/>
+              <span class="err-msg" id="fAmountErr"></span>
+            </div>
+            <div class="form-group">
+              <label>Term *</label>
+              <select id="fTerm">
+                <option value="">Select term</option>
+                <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+              </select>
+              <span class="err-msg" id="fTermErr"></span>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Payment Date *</label>
+              <input type="date" id="fDate"/>
+              <span class="err-msg" id="fDateErr"></span>
+            </div>
+            <div class="form-group">
+              <label>Status *</label>
+              <select id="fStatus">
+                <option value="Paid">Paid</option>
+                <option value="Pending">Pending</option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeFeeModal()">Cancel</button>
+        <button class="btn-primary" onclick="saveFee()"><i class="fas fa-save"></i> Save Payment</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal modal-sm">
+      <div class="modal-header"><h3>Confirm Delete</h3><button class="modal-close" onclick="closeDeleteModal()"><i class="fas fa-times"></i></button></div>
+      <div class="modal-body"><p>Delete this fee record?</p></div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+        <button class="btn-danger" id="confirmDeleteBtn"><i class="fas fa-trash"></i> Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    SMS.checkAuth(); SMS.applyTheme();
+    SMS.renderSidebar('sidebar','fees');
+    SMS.renderTopbar('topbar','Fee Management');
+
+    document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
+
+    SMS.getData('students').forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.id; opt.textContent = `${s.name} (${s.class})`;
+      document.getElementById('fStudent').appendChild(opt);
+    });
+
+    function updateFeeOverview() {
+      const fees = SMS.getData('fees');
+      const paid = fees.filter(f=>f.status==='Paid');
+      const pending = fees.filter(f=>f.status==='Pending');
+      const total = paid.reduce((sum,f)=>sum+(parseFloat(f.amount)||0),0);
+      document.getElementById('fovPaid').textContent = paid.length;
+      document.getElementById('fovPending').textContent = pending.length;
+      document.getElementById('fovTotal').textContent = fees.length;
+      document.getElementById('fovAmount').textContent = 'GHS ' + total.toFixed(2);
+    }
+
+    function renderFees() {
+      const search = document.getElementById('feeSearch').value.toLowerCase();
+      const status = document.getElementById('feeStatusFilter').value;
+      const term = document.getElementById('feeTermFilter').value;
+      let data = SMS.getData('fees');
+      if (search) data = data.filter(f => f.studentName.toLowerCase().includes(search));
+      if (status) data = data.filter(f => f.status === status);
+      if (term) data = data.filter(f => f.term === term);
+      data = data.sort((a,b)=>b.date.localeCompare(a.date));
+
+      const tbody = document.getElementById('feesTbody');
+      tbody.innerHTML = '';
+      document.getElementById('feesEmpty').style.display = data.length ? 'none' : 'flex';
+      document.getElementById('feeCount').textContent = data.length + ' record(s)';
+      updateFeeOverview();
+
+      data.forEach((f, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><span class="id-badge">${f.receipt}</span></td>
+          <td>${f.studentName}</td>
+          <td>${f.class}</td>
+          <td>${f.type}</td>
+          <td><strong>GHS ${parseFloat(f.amount).toFixed(2)}</strong></td>
+          <td>${f.term}</td>
+          <td>${f.date}</td>
+          <td><span class="badge-status ${f.status==='Paid'?'active':'danger'}">${f.status}</span></td>
+          <td class="action-btns">
+            <button class="btn-edit" onclick="editFee(${SMS.getData('fees').findIndex(x=>x.receipt===f.receipt)})"><i class="fas fa-edit"></i></button>
+            <button class="btn-del" onclick="confirmDelete(${SMS.getData('fees').findIndex(x=>x.receipt===f.receipt)})"><i class="fas fa-trash"></i></button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function openFeeModal(editIdx=null) {
+      document.getElementById('feeForm').reset();
+      ['fStudent','fType','fAmount','fTerm','fDate'].forEach(id=>{ const e=document.getElementById(id+'Err'); if(e) e.textContent=''; });
+      document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('feeEditIdx').value = editIdx !== null ? editIdx : '';
+      document.getElementById('feeModalTitle').textContent = editIdx !== null ? 'Edit Fee Record' : 'Add Fee Payment';
+      if (editIdx !== null) {
+        const f = SMS.getData('fees')[editIdx];
+        document.getElementById('fStudent').value = f.studentId;
+        document.getElementById('fType').value = f.type;
+        document.getElementById('fAmount').value = f.amount;
+        document.getElementById('fTerm').value = f.term;
+        document.getElementById('fDate').value = f.date;
+        document.getElementById('fStatus').value = f.status;
+      }
+      document.getElementById('feeModal').classList.add('active');
+    }
+
+    function editFee(idx) { openFeeModal(idx); }
+    function closeFeeModal() { document.getElementById('feeModal').classList.remove('active'); }
+
+    function saveFee() {
+      let valid = true;
+      const checks = [{id:'fStudent',label:'Student'},{id:'fType',label:'Fee type'},{id:'fAmount',label:'Amount'},{id:'fTerm',label:'Term'},{id:'fDate',label:'Date'}];
+      checks.forEach(c => { if(!document.getElementById(c.id).value.trim()){document.getElementById(c.id+'Err').textContent=c.label+' is required.';valid=false;} else {const e=document.getElementById(c.id+'Err');if(e)e.textContent='';} });
+      if (!valid) return;
+
+      const sId = document.getElementById('fStudent').value;
+      const student = SMS.getData('students').find(s=>s.id===sId);
+      const editIdx = document.getElementById('feeEditIdx').value;
+      let fees = SMS.getData('fees');
+
+      const feeRecord = {
+        receipt: editIdx !== '' ? fees[parseInt(editIdx)].receipt : 'RCP' + String(fees.length+1).padStart(4,'0'),
+        studentId: sId, studentName: student.name, class: student.class,
+        type: document.getElementById('fType').value,
+        amount: document.getElementById('fAmount').value,
+        term: document.getElementById('fTerm').value,
+        date: document.getElementById('fDate').value,
+        status: document.getElementById('fStatus').value
+      };
+
+      if (editIdx !== '') { fees[parseInt(editIdx)] = feeRecord; } else { fees.push(feeRecord); }
+      SMS.setData('fees', fees);
+      closeFeeModal(); renderFees();
+      SMS.toast(editIdx !== '' ? 'Fee record updated!' : 'Payment recorded!');
+    }
+
+    function confirmDelete(idx) {
+      document.getElementById('deleteModal').classList.add('active');
+      document.getElementById('confirmDeleteBtn').onclick = () => {
+        let fees = SMS.getData('fees'); fees.splice(idx, 1);
+        SMS.setData('fees', fees); closeDeleteModal(); renderFees();
+        SMS.toast('Fee record deleted.','warning');
+      };
+    }
+    function closeDeleteModal() { document.getElementById('deleteModal').classList.remove('active'); }
+
+    renderFees();
+  </script>
+</body>
+</html>

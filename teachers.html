@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ShaqTech International School — Teachers</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body class="app-body">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main-wrap">
+    <header class="topbar" id="topbar"></header>
+    <main class="page-content">
+      <div class="page-header">
+        <div>
+          <h2>Teacher Management</h2>
+          <span class="breadcrumb">Dashboard / Teachers</span>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn-export" onclick="SMS.exportCSV('teachers')"><i class="fas fa-download"></i> Export CSV</button>
+          <button class="btn-primary" onclick="openTeacherModal()"><i class="fas fa-plus"></i> Add Teacher</button>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <div class="search-wrap">
+          <i class="fas fa-search"></i>
+          <input type="text" id="teacherSearch" placeholder="Search by name or ID..." oninput="renderTeachers()"/>
+        </div>
+        <select id="subjectFilter" onchange="renderTeachers()">
+          <option value="">All Subjects</option>
+        </select>
+      </div>
+
+      <div class="table-card">
+        <table class="data-table">
+          <thead>
+            <tr><th>Teacher ID</th><th>Full Name</th><th>Subject</th><th>Phone</th><th>Email</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="teachersTbody"></tbody>
+        </table>
+        <div id="teachersEmpty" class="empty-state" style="display:none">
+          <i class="fas fa-chalkboard-teacher"></i><p>No teachers found.</p>
+        </div>
+        <div class="table-footer"><span id="teacherCount">0 records</span></div>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-overlay" id="teacherModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="teacherModalTitle">Add New Teacher</h3>
+        <button class="modal-close" onclick="closeTeacherModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="teacherForm" novalidate>
+          <input type="hidden" id="teacherEditId"/>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Teacher ID *</label>
+              <input type="text" id="tId" placeholder="e.g. TCH001"/>
+              <span class="err-msg" id="tIdErr"></span>
+            </div>
+            <div class="form-group">
+              <label>Full Name *</label>
+              <input type="text" id="tName" placeholder="Full name"/>
+              <span class="err-msg" id="tNameErr"></span>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Subject *</label>
+              <select id="tSubject">
+                <option value="">Select subject</option>
+              </select>
+              <span class="err-msg" id="tSubjectErr"></span>
+            </div>
+            <div class="form-group">
+              <label>Phone Number *</label>
+              <input type="text" id="tPhone" placeholder="Phone number"/>
+              <span class="err-msg" id="tPhoneErr"></span>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group full-width">
+              <label>Email Address *</label>
+              <input type="email" id="tEmail" placeholder="email@school.edu"/>
+              <span class="err-msg" id="tEmailErr"></span>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeTeacherModal()">Cancel</button>
+        <button class="btn-primary" onclick="saveTeacher()"><i class="fas fa-save"></i> Save Teacher</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h3><i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i> Confirm Delete</h3>
+        <button class="modal-close" onclick="closeDeleteModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body"><p>Delete this teacher record? This cannot be undone.</p></div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+        <button class="btn-danger" id="confirmDeleteBtn"><i class="fas fa-trash"></i> Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    SMS.checkAuth(); SMS.applyTheme();
+    SMS.renderSidebar('sidebar', 'teachers');
+    SMS.renderTopbar('topbar', 'Teacher Management');
+
+    const subjects = SMS.getData('subjects');
+    const subjectSels = [document.getElementById('tSubject'), document.getElementById('subjectFilter')];
+    subjectSels.forEach(sel => {
+      subjects.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.name; opt.textContent = s.name;
+        sel.appendChild(opt);
+      });
+    });
+
+    function renderTeachers() {
+      const search = document.getElementById('teacherSearch').value.toLowerCase();
+      const subj = document.getElementById('subjectFilter').value;
+      let data = SMS.getData('teachers');
+      if (search) data = data.filter(t => t.name.toLowerCase().includes(search) || t.id.toLowerCase().includes(search));
+      if (subj) data = data.filter(t => t.subject === subj);
+
+      const tbody = document.getElementById('teachersTbody');
+      tbody.innerHTML = '';
+      document.getElementById('teachersEmpty').style.display = data.length ? 'none' : 'flex';
+      document.getElementById('teacherCount').textContent = data.length + ' record(s)';
+
+      data.forEach(t => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><span class="id-badge">${t.id}</span></td>
+          <td><div class="name-cell"><div class="avatar-sm teacher">${t.name[0]}</div>${t.name}</div></td>
+          <td><span class="subject-tag">${t.subject}</span></td>
+          <td>${t.phone}</td>
+          <td>${t.email}</td>
+          <td class="action-btns">
+            <button class="btn-edit" onclick="editTeacher('${t.id}')"><i class="fas fa-edit"></i></button>
+            <button class="btn-del" onclick="confirmDelete('${t.id}')"><i class="fas fa-trash"></i></button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function openTeacherModal(editId = null) {
+      document.getElementById('teacherForm').reset();
+      ['tId','tName','tSubject','tPhone','tEmail'].forEach(id => { const e = document.getElementById(id+'Err'); if(e) e.textContent=''; });
+      document.getElementById('teacherEditId').value = editId || '';
+      document.getElementById('teacherModalTitle').textContent = editId ? 'Edit Teacher' : 'Add New Teacher';
+      if (editId) {
+        const t = SMS.getData('teachers').find(x => x.id === editId);
+        if (t) {
+          document.getElementById('tId').value = t.id; document.getElementById('tId').disabled = true;
+          document.getElementById('tName').value = t.name;
+          document.getElementById('tSubject').value = t.subject;
+          document.getElementById('tPhone').value = t.phone;
+          document.getElementById('tEmail').value = t.email;
+        }
+      } else {
+        document.getElementById('tId').disabled = false;
+        document.getElementById('tId').value = SMS.generateId('TCH', 'teachers');
+      }
+      document.getElementById('teacherModal').classList.add('active');
+    }
+
+    function editTeacher(id) { openTeacherModal(id); }
+    function closeTeacherModal() { document.getElementById('teacherModal').classList.remove('active'); document.getElementById('tId').disabled=false; }
+
+    function saveTeacher() {
+      let valid = true;
+      const checks = [{id:'tId',label:'Teacher ID'},{id:'tName',label:'Name'},{id:'tSubject',label:'Subject'},{id:'tPhone',label:'Phone'},{id:'tEmail',label:'Email'}];
+      checks.forEach(c => { if(!document.getElementById(c.id).value.trim()){document.getElementById(c.id+'Err').textContent=c.label+' is required.';valid=false;} else { document.getElementById(c.id+'Err').textContent=''; } });
+      if (!valid) return;
+
+      const email = document.getElementById('tEmail').value.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { document.getElementById('tEmailErr').textContent='Enter a valid email.'; return; }
+
+      const editId = document.getElementById('teacherEditId').value;
+      const teacher = { id: document.getElementById('tId').value.trim(), name: document.getElementById('tName').value.trim(), subject: document.getElementById('tSubject').value, phone: document.getElementById('tPhone').value.trim(), email };
+      let teachers = SMS.getData('teachers');
+      if (editId) { const idx = teachers.findIndex(t => t.id === editId); if(idx>-1) teachers[idx]=teacher; }
+      else {
+        if (teachers.find(t => t.id === teacher.id)) { document.getElementById('tIdErr').textContent='ID already exists.'; return; }
+        teachers.push(teacher);
+      }
+      SMS.setData('teachers', teachers);
+      closeTeacherModal(); renderTeachers();
+      SMS.toast(editId ? 'Teacher updated!' : 'Teacher added!');
+    }
+
+    function confirmDelete(id) {
+      document.getElementById('deleteModal').classList.add('active');
+      document.getElementById('confirmDeleteBtn').onclick = () => {
+        SMS.setData('teachers', SMS.getData('teachers').filter(t => t.id !== id));
+        closeDeleteModal(); renderTeachers(); SMS.toast('Teacher deleted.','warning');
+      };
+    }
+    function closeDeleteModal() { document.getElementById('deleteModal').classList.remove('active'); }
+
+    renderTeachers();
+  </script>
+</body>
+</html>

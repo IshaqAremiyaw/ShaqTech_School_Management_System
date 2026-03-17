@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ShaqTech International School — Subjects</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body class="app-body">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main-wrap">
+    <header class="topbar" id="topbar"></header>
+    <main class="page-content">
+      <div class="page-header">
+        <div><h2>Subject Management</h2><span class="breadcrumb">Dashboard / Subjects</span></div>
+        <button class="btn-primary" onclick="openSubjectModal()"><i class="fas fa-plus"></i> Add Subject</button>
+      </div>
+
+      <div class="subjects-grid" id="subjectsGrid"></div>
+      <div id="subjectsEmpty" class="empty-state" style="display:none"><i class="fas fa-book"></i><p>No subjects yet.</p></div>
+    </main>
+  </div>
+
+  <div class="modal-overlay" id="subjectModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="subjectModalTitle">Add New Subject</h3>
+        <button class="modal-close" onclick="closeSubjectModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="subjectForm">
+          <input type="hidden" id="subjectEditId"/>
+          <div class="form-group">
+            <label>Subject Name *</label>
+            <input type="text" id="sbjName" placeholder="e.g. Mathematics"/>
+            <span class="err-msg" id="sbjNameErr"></span>
+          </div>
+          <div class="form-group">
+            <label>Subject Code</label>
+            <input type="text" id="sbjCode" placeholder="e.g. MATH101"/>
+          </div>
+          <div class="form-group">
+            <label>Assigned Classes</label>
+            <div id="classCheckboxes" class="checkbox-list"></div>
+          </div>
+          <div class="form-group">
+            <label>Subject Color</label>
+            <div class="color-picker-row">
+              <button type="button" class="color-opt" data-color="#3b82f6" style="background:#3b82f6" onclick="selectColor(this)"></button>
+              <button type="button" class="color-opt" data-color="#10b981" style="background:#10b981" onclick="selectColor(this)"></button>
+              <button type="button" class="color-opt" data-color="#f59e0b" style="background:#f59e0b" onclick="selectColor(this)"></button>
+              <button type="button" class="color-opt" data-color="#8b5cf6" style="background:#8b5cf6" onclick="selectColor(this)"></button>
+              <button type="button" class="color-opt" data-color="#ef4444" style="background:#ef4444" onclick="selectColor(this)"></button>
+              <button type="button" class="color-opt" data-color="#06b6d4" style="background:#06b6d4" onclick="selectColor(this)"></button>
+              <input type="hidden" id="sbjColor" value="#3b82f6"/>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeSubjectModal()">Cancel</button>
+        <button class="btn-primary" onclick="saveSubject()"><i class="fas fa-save"></i> Save Subject</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal modal-sm">
+      <div class="modal-header"><h3>Confirm Delete</h3><button class="modal-close" onclick="closeDeleteModal()"><i class="fas fa-times"></i></button></div>
+      <div class="modal-body"><p>Delete this subject?</p></div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+        <button class="btn-danger" id="confirmDeleteBtn"><i class="fas fa-trash"></i> Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    SMS.checkAuth(); SMS.applyTheme();
+    SMS.renderSidebar('sidebar','subjects');
+    SMS.renderTopbar('topbar','Subject Management');
+
+    let selectedColor = '#3b82f6';
+
+    function selectColor(btn) {
+      document.querySelectorAll('.color-opt').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedColor = btn.dataset.color;
+      document.getElementById('sbjColor').value = selectedColor;
+    }
+
+    function populateClassCheckboxes(assignedClasses = []) {
+      const container = document.getElementById('classCheckboxes');
+      container.innerHTML = '';
+      SMS.getData('classes').forEach(c => {
+        const label = document.createElement('label');
+        label.className = 'checkbox-wrap inline';
+        label.innerHTML = `<input type="checkbox" name="sbjClass" value="${c.name}" ${assignedClasses.includes(c.name)?'checked':''}/><span class="checkmark"></span>${c.name}`;
+        container.appendChild(label);
+      });
+    }
+
+    function renderSubjects() {
+      const data = SMS.getData('subjects');
+      const grid = document.getElementById('subjectsGrid');
+      grid.innerHTML = '';
+      document.getElementById('subjectsEmpty').style.display = data.length ? 'none' : 'flex';
+      data.forEach((s, i) => {
+        const card = document.createElement('div');
+        card.className = 'subject-card';
+        card.innerHTML = `
+          <div class="subject-card-top" style="background:${s.color || '#3b82f6'}">
+            <div class="subject-icon"><i class="fas fa-book-open"></i></div>
+            <div class="subject-card-actions">
+              <button onclick="editSubject(${i})"><i class="fas fa-edit"></i></button>
+              <button onclick="confirmDelete(${i})"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+          <div class="subject-card-body">
+            <h4>${s.name}</h4>
+            <span class="subject-code">${s.code || 'N/A'}</span>
+            <div class="subject-classes">${(s.classes||[]).map(c=>`<span>${c}</span>`).join('') || '<em>No classes assigned</em>'}</div>
+          </div>`;
+        grid.appendChild(card);
+      });
+    }
+
+    function openSubjectModal(editIdx = null) {
+      document.getElementById('subjectForm').reset();
+      document.getElementById('sbjNameErr').textContent = '';
+      document.getElementById('subjectEditId').value = editIdx !== null ? editIdx : '';
+      document.getElementById('subjectModalTitle').textContent = editIdx !== null ? 'Edit Subject' : 'Add New Subject';
+      selectedColor = '#3b82f6';
+      document.getElementById('sbjColor').value = selectedColor;
+      document.querySelectorAll('.color-opt').forEach(b => b.classList.remove('selected'));
+      document.querySelector('.color-opt[data-color="#3b82f6"]').classList.add('selected');
+
+      let assigned = [];
+      if (editIdx !== null) {
+        const s = SMS.getData('subjects')[editIdx];
+        document.getElementById('sbjName').value = s.name;
+        document.getElementById('sbjCode').value = s.code || '';
+        selectedColor = s.color || '#3b82f6';
+        document.getElementById('sbjColor').value = selectedColor;
+        assigned = s.classes || [];
+        const matchBtn = document.querySelector(`.color-opt[data-color="${selectedColor}"]`);
+        if (matchBtn) { document.querySelectorAll('.color-opt').forEach(b=>b.classList.remove('selected')); matchBtn.classList.add('selected'); }
+      }
+      populateClassCheckboxes(assigned);
+      document.getElementById('subjectModal').classList.add('active');
+    }
+
+    function editSubject(idx) { openSubjectModal(idx); }
+    function closeSubjectModal() { document.getElementById('subjectModal').classList.remove('active'); }
+
+    function saveSubject() {
+      const name = document.getElementById('sbjName').value.trim();
+      if (!name) { document.getElementById('sbjNameErr').textContent='Subject name is required.'; return; }
+      document.getElementById('sbjNameErr').textContent='';
+      const classes = Array.from(document.querySelectorAll('input[name="sbjClass"]:checked')).map(cb=>cb.value);
+      const subject = { name, code: document.getElementById('sbjCode').value.trim(), classes, color: document.getElementById('sbjColor').value };
+      const editIdx = document.getElementById('subjectEditId').value;
+      let subjects = SMS.getData('subjects');
+      if (editIdx !== '') { subjects[parseInt(editIdx)] = subject; } else { subjects.push(subject); }
+      SMS.setData('subjects', subjects);
+      closeSubjectModal(); renderSubjects();
+      SMS.toast(editIdx !== '' ? 'Subject updated!' : 'Subject added!');
+    }
+
+    function confirmDelete(idx) {
+      document.getElementById('deleteModal').classList.add('active');
+      document.getElementById('confirmDeleteBtn').onclick = () => {
+        let subjects = SMS.getData('subjects'); subjects.splice(idx, 1);
+        SMS.setData('subjects', subjects); closeDeleteModal(); renderSubjects();
+        SMS.toast('Subject deleted.','warning');
+      };
+    }
+    function closeDeleteModal() { document.getElementById('deleteModal').classList.remove('active'); }
+
+    renderSubjects();
+  </script>
+</body>
+</html>
