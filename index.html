@@ -1,59 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ShaqTech International School — Login</title>
-  <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gold: #c9a84c; --gold-light: #e8c97a; --gold-dim: rgba(201,168,76,0.12);
+      --dark: #080c14; --dark-2: #0d1220; --dark-3: #111827; --dark-4: #1a2235;
+      --glass: rgba(255,255,255,0.04); --glass-border: rgba(255,255,255,0.08);
+      --text: #f0f4ff; --text-muted: rgba(240,244,255,0.45); --danger: #f87171;
+    }
+    html, body { height: 100%; font-family: 'Outfit', sans-serif; background: var(--dark); color: var(--text); overflow: hidden; }
+
+    /* BG */
+    .bg-canvas {
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 15% 20%, rgba(201,168,76,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 85% 80%, rgba(29,78,216,0.08) 0%, transparent 60%),
+        linear-gradient(160deg, #080c14 0%, #0d1220 50%, #080c14 100%);
+    }
+    .orb { position: fixed; border-radius: 50%; filter: blur(80px); animation: drift linear infinite; z-index: 0; pointer-events: none; }
+    .orb-1 { width: 500px; height: 500px; top: -150px; left: -100px; background: rgba(201,168,76,0.06); animation-duration: 25s; }
+    .orb-2 { width: 400px; height: 400px; bottom: -100px; right: -50px; background: rgba(29,78,216,0.07); animation-duration: 30s; animation-delay: -10s; }
+    .orb-3 { width: 250px; height: 250px; top: 40%; left: 50%; background: rgba(201,168,76,0.04); animation-duration: 20s; animation-delay: -5s; }
+    @keyframes drift { 0%{transform:translate(0,0) scale(1)} 33%{transform:translate(30px,-20px) scale(1.05)} 66%{transform:translate(-20px,30px) scale(0.95)} 100%{transform:translate(0,0) scale(1)} }
+    .grid-overlay {
+      position: fixed; inset: 0; z-index: 0;
+      background-image: linear-gradient(rgba(201,168,76,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(201,168,76,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black 0%, transparent 100%);
+    }
+
+    /* LAYOUT */
+    .page { position: relative; z-index: 1; min-height: 100vh; display: grid; grid-template-columns: 1fr 480px; }
+
+    /* LEFT */
+    .left-panel { display: flex; flex-direction: column; justify-content: center; padding: 4rem 5rem; position: relative; overflow: hidden; }
+    .left-panel::after { content:''; position:absolute; top:0; right:0; bottom:0; width:1px; background:linear-gradient(to bottom, transparent 0%, var(--gold) 40%, var(--gold) 60%, transparent 100%); opacity:0.2; }
+
+    .school-emblem { display: flex; align-items: center; gap: 1.25rem; margin-bottom: 3rem; animation: fadeUp 0.8s ease both; }
+    .emblem-icon { width:64px; height:64px; border:2px solid var(--gold); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.6rem; color:var(--gold); background:var(--gold-dim); box-shadow:0 0 30px rgba(201,168,76,0.15),inset 0 1px 0 rgba(255,255,255,0.1); position:relative; flex-shrink:0; }
+    .emblem-icon::before { content:''; position:absolute; inset:-6px; border-radius:18px; border:1px solid rgba(201,168,76,0.15); }
+    .emblem-text .school-name { font-family:'Playfair Display',serif; font-size:1.2rem; font-weight:700; color:var(--text); line-height:1.2; letter-spacing:0.3px; }
+    .emblem-text .school-tag { font-size:0.7rem; color:var(--gold); letter-spacing:2.5px; text-transform:uppercase; margin-top:4px; font-weight:500; }
+
+    .hero-headline { animation: fadeUp 0.8s ease 0.1s both; margin-bottom: 1.5rem; }
+    .hero-headline h2 { font-family:'Playfair Display',serif; font-size:clamp(2.2rem,3.5vw,3.2rem); font-weight:700; line-height:1.2; color:var(--text); letter-spacing:-0.5px; }
+    .hero-headline h2 em { font-style:italic; color:var(--gold-light); }
+    .hero-headline p { margin-top:1rem; font-size:1rem; color:var(--text-muted); line-height:1.7; max-width:420px; font-weight:300; }
+
+    .gold-divider { width:60px; height:3px; background:linear-gradient(90deg,var(--gold),transparent); border-radius:99px; margin-bottom:2.5rem; animation:fadeUp 0.8s ease 0.2s both; }
+
+    .features { display:flex; flex-direction:column; gap:0.75rem; animation:fadeUp 0.8s ease 0.3s both; }
+    .feature-row { display:flex; align-items:center; gap:0.875rem; padding:0.75rem 1rem; background:var(--glass); border:1px solid var(--glass-border); border-radius:10px; backdrop-filter:blur(10px); transition:border-color 0.3s,background 0.3s; }
+    .feature-row:hover { background:rgba(201,168,76,0.06); border-color:rgba(201,168,76,0.2); }
+    .feature-row .fi { width:32px; height:32px; border-radius:8px; background:var(--gold-dim); color:var(--gold); display:flex; align-items:center; justify-content:center; font-size:0.85rem; flex-shrink:0; }
+    .feature-row span { font-size:0.875rem; color:var(--text-muted); font-weight:400; }
+
+    .stat-strip { display:flex; gap:2rem; margin-top:3rem; animation:fadeUp 0.8s ease 0.4s both; }
+    .stat-item .val { font-family:'Playfair Display',serif; font-size:1.6rem; font-weight:700; color:var(--gold-light); }
+    .stat-item .lbl { font-size:0.7rem; color:var(--text-muted); letter-spacing:1px; text-transform:uppercase; margin-top:2px; }
+
+    /* RIGHT */
+    .right-panel { display:flex; align-items:center; justify-content:center; padding:2rem; background:rgba(8,12,20,0.5); border-left:1px solid var(--glass-border); }
+    .login-card { width:100%; max-width:400px; animation:fadeUp 0.9s ease 0.15s both; }
+
+    .card-header { margin-bottom:2.25rem; }
+    .welcome-tag { display:inline-flex; align-items:center; gap:0.4rem; font-size:0.7rem; letter-spacing:2px; text-transform:uppercase; color:var(--gold); font-weight:600; margin-bottom:0.875rem; }
+    .welcome-tag::before { content:''; width:20px; height:1px; background:var(--gold); display:block; }
+    .card-header h3 { font-family:'Playfair Display',serif; font-size:1.9rem; font-weight:700; color:var(--text); line-height:1.2; margin-bottom:0.5rem; }
+    .card-header p { font-size:0.875rem; color:var(--text-muted); font-weight:300; }
+
+    .field-group { margin-bottom:1.25rem; }
+    .field-group label { display:block; font-size:0.72rem; letter-spacing:0.8px; text-transform:uppercase; color:var(--text-muted); font-weight:500; margin-bottom:0.5rem; }
+    .field-wrap { position:relative; }
+    .field-wrap .fi { position:absolute; left:1rem; top:50%; transform:translateY(-50%); color:rgba(255,255,255,0.2); font-size:0.85rem; pointer-events:none; transition:color 0.3s; z-index:1; }
+    .field-wrap input { width:100%; padding:0.875rem 1rem 0.875rem 2.75rem; background:var(--dark-4); border:1.5px solid rgba(255,255,255,0.08); border-radius:10px; color:var(--text); font-family:'Outfit',sans-serif; font-size:0.9rem; font-weight:400; transition:border-color 0.3s,box-shadow 0.3s,background 0.3s; outline:none; }
+    .field-wrap input::placeholder { color:rgba(255,255,255,0.2); }
+    .field-wrap input:focus { border-color:var(--gold); background:rgba(201,168,76,0.04); box-shadow:0 0 0 4px rgba(201,168,76,0.08); }
+    .field-wrap:focus-within .fi { color:var(--gold); }
+    .toggle-pass { position:absolute; right:0.875rem; top:50%; transform:translateY(-50%); color:rgba(255,255,255,0.2); font-size:0.85rem; background:none; border:none; cursor:pointer; transition:color 0.3s; padding:0.25rem; z-index:2; }
+    .toggle-pass:hover { color:var(--gold); }
+    .err-msg { display:block; font-size:0.75rem; color:var(--danger); margin-top:0.35rem; min-height:1.1em; }
+
+    .extras-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.75rem; margin-top:-0.25rem; }
+    .remember-wrap { display:flex; align-items:center; gap:0.5rem; font-size:0.8rem; color:var(--text-muted); cursor:pointer; }
+    .remember-wrap input { display:none; }
+    .custom-check { width:16px; height:16px; border:1.5px solid rgba(255,255,255,0.15); border-radius:4px; display:flex; align-items:center; justify-content:center; transition:all 0.25s; flex-shrink:0; }
+    .remember-wrap input:checked ~ .custom-check { background:var(--gold); border-color:var(--gold); }
+    .remember-wrap input:checked ~ .custom-check::after { content:''; width:4px; height:7px; border:2px solid #000; border-top:none; border-left:none; transform:rotate(45deg) translate(-1px,-2px); display:block; }
+    .forgot-link { font-size:0.8rem; color:var(--gold); text-decoration:none; font-weight:500; transition:opacity 0.2s; }
+    .forgot-link:hover { opacity:0.7; }
+
+    .btn-signin { width:100%; padding:0.95rem; background:linear-gradient(135deg,#b8902a 0%,var(--gold) 50%,var(--gold-light) 100%); border:none; border-radius:10px; color:#0d0d0d; font-family:'Outfit',sans-serif; font-size:0.9rem; font-weight:700; letter-spacing:0.5px; cursor:pointer; position:relative; overflow:hidden; transition:transform 0.2s,box-shadow 0.3s; box-shadow:0 4px 20px rgba(201,168,76,0.3); display:flex; align-items:center; justify-content:center; gap:0.6rem; }
+    .btn-signin::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,0.15),transparent); }
+    .btn-signin:hover { transform:translateY(-2px); box-shadow:0 8px 30px rgba(201,168,76,0.45); }
+    .btn-signin:active { transform:translateY(0); }
+    .btn-signin:disabled { opacity:0.7; transform:none; cursor:not-allowed; }
+
+    .card-divider { display:flex; align-items:center; gap:0.75rem; margin:1.5rem 0; color:var(--text-muted); font-size:0.72rem; letter-spacing:1px; text-transform:uppercase; }
+    .card-divider::before, .card-divider::after { content:''; flex:1; height:1px; background:rgba(255,255,255,0.07); }
+
+    .card-footer { text-align:center; font-size:0.75rem; color:var(--text-muted); line-height:1.8; }
+    .system-badge { display:inline-flex; align-items:center; gap:0.4rem; padding:0.4rem 0.875rem; background:var(--glass); border:1px solid var(--glass-border); border-radius:99px; font-size:0.72rem; color:var(--text-muted); margin-bottom:0.75rem; }
+    .pulse-dot { width:6px; height:6px; background:#22c55e; border-radius:50%; animation:pulse 2s ease infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.85)} }
+
+    @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    .fa-spin { animation:spin 0.8s linear infinite; }
+
+    @media (max-width: 900px) {
+      .page { grid-template-columns: 1fr; }
+      .left-panel { display: none; }
+      .right-panel { min-height:100vh; background:var(--dark-2); border-left:none; }
+    }
+  </style>
 </head>
-<body class="login-page">
+<body>
 
-  <div class="login-bg">
-    <div class="login-shapes">
-      <div class="shape shape-1"></div>
-      <div class="shape shape-2"></div>
-      <div class="shape shape-3"></div>
-    </div>
-  </div>
+  <div class="bg-canvas"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="grid-overlay"></div>
 
-  <div class="login-wrapper">
-    <div class="login-left">
-      <div class="login-brand">
-        <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
-        <h1>ShaqTech<span>IMS</span></h1>
-        <p>ShaqTech International School</p>
+  <div class="page">
+
+    <!-- LEFT -->
+    <div class="left-panel">
+      <div class="school-emblem">
+        <div class="emblem-icon"><i class="fas fa-graduation-cap"></i></div>
+        <div class="emblem-text">
+          <div class="school-name">ShaqTech International School</div>
+          <div class="school-tag">Management Information System</div>
+        </div>
       </div>
-      <div class="login-features">
-        <div class="feature-item"><i class="fas fa-users"></i><span>Student & Teacher Management</span></div>
-        <div class="feature-item"><i class="fas fa-chart-bar"></i><span>Results & Analytics</span></div>
-        <div class="feature-item"><i class="fas fa-calendar-check"></i><span>Attendance Tracking</span></div>
-        <div class="feature-item"><i class="fas fa-money-bill-wave"></i><span>Fee Management</span></div>
+
+      <div class="hero-headline">
+        <h2>Empowering <em>Excellence</em><br>in Education</h2>
+        <p>A comprehensive platform designed to streamline every aspect of school administration — from students and teachers to results, fees, and beyond.</p>
+      </div>
+
+      <div class="gold-divider"></div>
+
+      <div class="features">
+        <div class="feature-row"><div class="fi"><i class="fas fa-users"></i></div><span>Student &amp; Teacher Management</span></div>
+        <div class="feature-row"><div class="fi"><i class="fas fa-chart-line"></i></div><span>Results, Grades &amp; Analytics</span></div>
+        <div class="feature-row"><div class="fi"><i class="fas fa-calendar-check"></i></div><span>Attendance Tracking</span></div>
+        <div class="feature-row"><div class="fi"><i class="fas fa-coins"></i></div><span>Fee Collection &amp; Reports</span></div>
+      </div>
+
+      <div class="stat-strip">
+        <div class="stat-item"><div class="val">10+</div><div class="lbl">Modules</div></div>
+        <div class="stat-item"><div class="val">100%</div><div class="lbl">Browser-based</div></div>
+        <div class="stat-item"><div class="val">∞</div><div class="lbl">Records</div></div>
       </div>
     </div>
 
-    <div class="login-right">
+    <!-- RIGHT -->
+    <div class="right-panel">
       <div class="login-card">
-        <div class="login-header">
-          <h2>Welcome Back</h2>
-          <p>Sign in to your admin account</p>
+        <div class="card-header">
+          <div class="welcome-tag"><i class="fas fa-shield-halved" style="font-size:0.65rem"></i>&nbsp;Secure Access</div>
+          <h3>Administrator<br>Sign In</h3>
+          <p>Enter your credentials to access the management portal.</p>
         </div>
 
         <form id="loginForm" novalidate>
-          <div class="form-group">
+          <div class="field-group">
             <label for="username">Username</label>
-            <div class="input-wrap">
-              <i class="fas fa-user"></i>
+            <div class="field-wrap">
+              <i class="fas fa-user fi"></i>
               <input type="text" id="username" placeholder="Enter your username" autocomplete="off"/>
             </div>
             <span class="err-msg" id="usernameErr"></span>
           </div>
 
-          <div class="form-group">
+          <div class="field-group">
             <label for="password">Password</label>
-            <div class="input-wrap">
-              <i class="fas fa-lock"></i>
+            <div class="field-wrap">
+              <i class="fas fa-lock fi"></i>
               <input type="password" id="password" placeholder="Enter your password"/>
               <button type="button" class="toggle-pass" onclick="togglePassword()">
                 <i class="fas fa-eye" id="passEyeIcon"></i>
@@ -62,55 +194,50 @@
             <span class="err-msg" id="passwordErr"></span>
           </div>
 
-          <div class="form-extras">
-            <label class="checkbox-wrap">
+          <div class="extras-row">
+            <label class="remember-wrap">
               <input type="checkbox" id="rememberMe"/>
-              <span class="checkmark"></span>
+              <span class="custom-check"></span>
               Remember me
             </label>
             <a href="#" class="forgot-link">Forgot password?</a>
           </div>
 
-          <button type="submit" class="btn-login" id="loginBtn">
-            <span>Sign In</span>
+          <button type="submit" class="btn-signin" id="loginBtn">
+            <span>Sign In to Dashboard</span>
             <i class="fas fa-arrow-right"></i>
           </button>
 
-          <div class="login-hint">
-            <i class="fas fa-info-circle"></i>
-            Login: <strong>Admin</strong> / <strong>Starzio68</strong>
+          <div class="card-divider">Secured Portal</div>
+
+          <div class="card-footer">
+            <div class="system-badge">
+              <span class="pulse-dot"></span>
+              System Online &nbsp;&middot;&nbsp; ShaqTech IMS v1.0
+            </div>
+            <div>ShaqTech International School &copy; 2025</div>
           </div>
         </form>
       </div>
     </div>
+
   </div>
 
   <script src="script.js"></script>
   <script>
-    // Login page specific
     document.getElementById('loginForm').addEventListener('submit', function(e) {
       e.preventDefault();
       const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value.trim();
       let valid = true;
-
       document.getElementById('usernameErr').textContent = '';
       document.getElementById('passwordErr').textContent = '';
-
-      if (!username) {
-        document.getElementById('usernameErr').textContent = 'Username is required.';
-        valid = false;
-      }
-      if (!password) {
-        document.getElementById('passwordErr').textContent = 'Password is required.';
-        valid = false;
-      }
+      if (!username) { document.getElementById('usernameErr').textContent = 'Username is required.'; valid = false; }
+      if (!password) { document.getElementById('passwordErr').textContent = 'Password is required.'; valid = false; }
       if (!valid) return;
-
       const btn = document.getElementById('loginBtn');
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
       btn.disabled = true;
-
       setTimeout(() => {
         if (username === 'Admin' && password === 'Starzio68') {
           localStorage.setItem('sms_logged_in', 'true');
@@ -118,23 +245,18 @@
           SMS.initSampleData();
           window.location.href = 'dashboard.html';
         } else {
-          btn.innerHTML = '<span>Sign In</span><i class="fas fa-arrow-right"></i>';
+          btn.innerHTML = '<span>Sign In to Dashboard</span><i class="fas fa-arrow-right"></i>';
           btn.disabled = false;
           document.getElementById('passwordErr').textContent = 'Invalid username or password.';
         }
-      }, 800);
+      }, 900);
     });
 
     function togglePassword() {
       const p = document.getElementById('password');
       const icon = document.getElementById('passEyeIcon');
-      if (p.type === 'password') {
-        p.type = 'text';
-        icon.className = 'fas fa-eye-slash';
-      } else {
-        p.type = 'password';
-        icon.className = 'fas fa-eye';
-      }
+      if (p.type === 'password') { p.type = 'text'; icon.className = 'fas fa-eye-slash'; }
+      else { p.type = 'password'; icon.className = 'fas fa-eye'; }
     }
   </script>
 </body>
