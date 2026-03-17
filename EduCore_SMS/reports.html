@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ShaqTech International School — Reports</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body class="app-body">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main-wrap">
+    <header class="topbar" id="topbar"></header>
+    <main class="page-content">
+      <div class="page-header">
+        <div><h2>Reports</h2><span class="breadcrumb">Dashboard / Reports</span></div>
+        <button class="btn-export" onclick="printReport()"><i class="fas fa-print"></i> Print Report</button>
+      </div>
+
+      <div id="reportContent">
+        <!-- Summary Cards -->
+        <div class="stats-grid" id="reportStats"></div>
+
+        <!-- Reports Grid -->
+        <div class="dashboard-grid" style="margin-top:1.5rem">
+          <div class="dash-card">
+            <div class="dash-card-header"><h3><i class="fas fa-user-graduate"></i> Students by Class</h3></div>
+            <div class="dash-card-body">
+              <table class="mini-table" id="studentsByClass">
+                <thead><tr><th>Class</th><th>Students</th><th>Male</th><th>Female</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="dash-card">
+            <div class="dash-card-header"><h3><i class="fas fa-chalkboard-teacher"></i> Teachers by Subject</h3></div>
+            <div class="dash-card-body">
+              <table class="mini-table" id="teachersBySubject">
+                <thead><tr><th>Subject</th><th>Teacher</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="dash-card">
+            <div class="dash-card-header"><h3><i class="fas fa-money-bill-wave"></i> Fee Collection by Term</h3></div>
+            <div class="dash-card-body">
+              <table class="mini-table" id="feeByTerm">
+                <thead><tr><th>Term</th><th>Paid</th><th>Pending</th><th>Amount (GHS)</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="dash-card">
+            <div class="dash-card-header"><h3><i class="fas fa-calendar-check"></i> Attendance Summary</h3></div>
+            <div class="dash-card-body">
+              <table class="mini-table" id="attSummary">
+                <thead><tr><th>Class</th><th>Present</th><th>Absent</th><th>Rate</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="dash-card">
+            <div class="dash-card-header"><h3><i class="fas fa-chart-line"></i> Grade Distribution</h3></div>
+            <div class="dash-card-body">
+              <div id="gradeDistribution" class="grade-dist"></div>
+            </div>
+          </div>
+
+          <div class="dash-card">
+            <div class="dash-card-header"><h3><i class="fas fa-trophy"></i> Top Performers</h3></div>
+            <div class="dash-card-body">
+              <table class="mini-table" id="topPerformers">
+                <thead><tr><th>Rank</th><th>Student</th><th>Class</th><th>Avg</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    SMS.checkAuth(); SMS.applyTheme();
+    SMS.renderSidebar('sidebar','reports');
+    SMS.renderTopbar('topbar','Reports');
+
+    function generateReports() {
+      const students = SMS.getData('students');
+      const teachers = SMS.getData('teachers');
+      const classes = SMS.getData('classes');
+      const subjects = SMS.getData('subjects');
+      const fees = SMS.getData('fees');
+      const attendance = SMS.getData('attendance');
+      const results = SMS.getData('results');
+
+      // Stats cards
+      const stats = [
+        { label:'Total Students', val: students.length, icon:'fa-user-graduate', color:'card-blue' },
+        { label:'Total Teachers', val: teachers.length, icon:'fa-chalkboard-teacher', color:'card-green' },
+        { label:'Total Classes', val: classes.length, icon:'fa-school', color:'card-orange' },
+        { label:'Fee Records', val: fees.length, icon:'fa-receipt', color:'card-purple' },
+      ];
+      const statsGrid = document.getElementById('reportStats');
+      stats.forEach(s => {
+        statsGrid.innerHTML += `<div class="stat-card ${s.color}"><div class="stat-icon"><i class="fas ${s.icon}"></i></div><div class="stat-info"><div class="stat-number">${s.val}</div><div class="stat-label">${s.label}</div></div></div>`;
+      });
+
+      // Students by class
+      const sbcTbody = document.querySelector('#studentsByClass tbody');
+      classes.forEach(c => {
+        const cls = students.filter(s => s.class === c.name);
+        const male = cls.filter(s => s.gender === 'Male').length;
+        const female = cls.filter(s => s.gender === 'Female').length;
+        sbcTbody.innerHTML += `<tr><td>${c.name}</td><td><strong>${cls.length}</strong></td><td>${male}</td><td>${female}</td></tr>`;
+      });
+
+      // Teachers by subject
+      const tbsTbody = document.querySelector('#teachersBySubject tbody');
+      teachers.forEach(t => {
+        tbsTbody.innerHTML += `<tr><td>${t.subject}</td><td>${t.name}</td></tr>`;
+      });
+
+      // Fee by term
+      const terms = ['Term 1', 'Term 2', 'Term 3'];
+      const fbtTbody = document.querySelector('#feeByTerm tbody');
+      terms.forEach(term => {
+        const tFees = fees.filter(f => f.term === term);
+        const paid = tFees.filter(f => f.status==='Paid');
+        const pending = tFees.filter(f => f.status==='Pending');
+        const amount = paid.reduce((sum,f)=>sum+(parseFloat(f.amount)||0),0);
+        fbtTbody.innerHTML += `<tr><td>${term}</td><td>${paid.length}</td><td>${pending.length}</td><td>GHS ${amount.toFixed(2)}</td></tr>`;
+      });
+
+      // Attendance summary
+      const attTbody = document.querySelector('#attSummary tbody');
+      classes.forEach(c => {
+        const clsAtt = attendance.filter(a => a.class === c.name);
+        const present = clsAtt.filter(a => a.status==='Present').length;
+        const absent = clsAtt.filter(a => a.status==='Absent').length;
+        const total = present + absent;
+        const rate = total > 0 ? Math.round((present/total)*100) + '%' : 'N/A';
+        attTbody.innerHTML += `<tr><td>${c.name}</td><td>${present}</td><td>${absent}</td><td><strong>${rate}</strong></td></tr>`;
+      });
+
+      // Grade distribution
+      const gradeMap = {};
+      results.forEach(r => { gradeMap[r.grade] = (gradeMap[r.grade]||0)+1; });
+      const gradeColors = { A:'#10b981', B:'#3b82f6', C:'#f59e0b', D:'#f97316', F:'#ef4444' };
+      const maxVal = Math.max(...Object.values(gradeMap), 1);
+      const gradeDist = document.getElementById('gradeDistribution');
+      ['A','B','C','D','F'].forEach(g => {
+        const count = gradeMap[g] || 0;
+        const pct = Math.round((count/maxVal)*100);
+        gradeDist.innerHTML += `
+          <div class="grade-dist-row">
+            <span class="grade-dist-label">${g}</span>
+            <div class="grade-dist-bar-wrap"><div class="grade-dist-bar" style="width:${pct}%;background:${gradeColors[g]||'#3b82f6'}"></div></div>
+            <span class="grade-dist-count">${count}</span>
+          </div>`;
+      });
+
+      // Top performers
+      const sorted = [...results].sort((a,b)=>parseFloat(b.average)-parseFloat(a.average)).slice(0,5);
+      const tpTbody = document.querySelector('#topPerformers tbody');
+      sorted.forEach((r, i) => {
+        tpTbody.innerHTML += `<tr><td>${['🥇','🥈','🥉','4th','5th'][i]}</td><td>${r.studentName}</td><td>${r.class}</td><td><span class="grade-badge grade-${r.grade}">${r.average}</span></td></tr>`;
+      });
+      if (!sorted.length) tpTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted)">No results data</td></tr>';
+    }
+
+    function printReport() {
+      window.print();
+    }
+
+    generateReports();
+  </script>
+</body>
+</html>

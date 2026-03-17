@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ShaqTech International School — Classes</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body class="app-body">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main-wrap">
+    <header class="topbar" id="topbar"></header>
+    <main class="page-content">
+      <div class="page-header">
+        <div><h2>Class Management</h2><span class="breadcrumb">Dashboard / Classes</span></div>
+        <button class="btn-primary" onclick="openClassModal()"><i class="fas fa-plus"></i> Add Class</button>
+      </div>
+
+      <div class="table-card">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Class Name</th><th>Class Teacher</th><th>Capacity</th><th>Actions</th></tr></thead>
+          <tbody id="classesTbody"></tbody>
+        </table>
+        <div id="classesEmpty" class="empty-state" style="display:none"><i class="fas fa-school"></i><p>No classes yet.</p></div>
+        <div class="table-footer"><span id="classCount">0 records</span></div>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-overlay" id="classModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="classModalTitle">Add New Class</h3>
+        <button class="modal-close" onclick="closeClassModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="classForm">
+          <input type="hidden" id="classEditId"/>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Class Name *</label>
+              <input type="text" id="cName" placeholder="e.g. Grade 10A"/>
+              <span class="err-msg" id="cNameErr"></span>
+            </div>
+            <div class="form-group">
+              <label>Capacity</label>
+              <input type="number" id="cCapacity" placeholder="e.g. 40" min="1"/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Class Teacher</label>
+            <select id="cTeacher">
+              <option value="">Select teacher</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeClassModal()">Cancel</button>
+        <button class="btn-primary" onclick="saveClass()"><i class="fas fa-save"></i> Save Class</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal modal-sm">
+      <div class="modal-header"><h3>Confirm Delete</h3><button class="modal-close" onclick="closeDeleteModal()"><i class="fas fa-times"></i></button></div>
+      <div class="modal-body"><p>Delete this class? This action cannot be undone.</p></div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+        <button class="btn-danger" id="confirmDeleteBtn"><i class="fas fa-trash"></i> Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    SMS.checkAuth(); SMS.applyTheme();
+    SMS.renderSidebar('sidebar','classes');
+    SMS.renderTopbar('topbar','Class Management');
+
+    function populateTeacherDropdown() {
+      const sel = document.getElementById('cTeacher');
+      sel.innerHTML = '<option value="">Select teacher</option>';
+      SMS.getData('teachers').forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.name; opt.textContent = `${t.name} (${t.subject})`;
+        sel.appendChild(opt);
+      });
+    }
+
+    function renderClasses() {
+      const data = SMS.getData('classes');
+      const tbody = document.getElementById('classesTbody');
+      tbody.innerHTML = '';
+      document.getElementById('classesEmpty').style.display = data.length ? 'none' : 'flex';
+      document.getElementById('classCount').textContent = data.length + ' record(s)';
+      data.forEach((c, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${i+1}</td>
+          <td><strong>${c.name}</strong></td>
+          <td>${c.teacher || '<em>Unassigned</em>'}</td>
+          <td>${c.capacity || '—'}</td>
+          <td class="action-btns">
+            <button class="btn-edit" onclick="editClass(${i})"><i class="fas fa-edit"></i></button>
+            <button class="btn-del" onclick="confirmDelete(${i})"><i class="fas fa-trash"></i></button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function openClassModal(editIdx = null) {
+      document.getElementById('classForm').reset();
+      document.getElementById('cNameErr').textContent = '';
+      populateTeacherDropdown();
+      document.getElementById('classEditId').value = editIdx !== null ? editIdx : '';
+      document.getElementById('classModalTitle').textContent = editIdx !== null ? 'Edit Class' : 'Add New Class';
+      if (editIdx !== null) {
+        const c = SMS.getData('classes')[editIdx];
+        document.getElementById('cName').value = c.name;
+        document.getElementById('cTeacher').value = c.teacher || '';
+        document.getElementById('cCapacity').value = c.capacity || '';
+      }
+      document.getElementById('classModal').classList.add('active');
+    }
+
+    function editClass(idx) { openClassModal(idx); }
+    function closeClassModal() { document.getElementById('classModal').classList.remove('active'); }
+
+    function saveClass() {
+      const name = document.getElementById('cName').value.trim();
+      if (!name) { document.getElementById('cNameErr').textContent='Class name is required.'; return; }
+      document.getElementById('cNameErr').textContent='';
+      const cls = { name, teacher: document.getElementById('cTeacher').value, capacity: document.getElementById('cCapacity').value };
+      const editIdx = document.getElementById('classEditId').value;
+      let classes = SMS.getData('classes');
+      if (editIdx !== '') { classes[parseInt(editIdx)] = cls; } else { classes.push(cls); }
+      SMS.setData('classes', classes);
+      closeClassModal(); renderClasses();
+      SMS.toast(editIdx !== '' ? 'Class updated!' : 'Class added!');
+    }
+
+    function confirmDelete(idx) {
+      document.getElementById('deleteModal').classList.add('active');
+      document.getElementById('confirmDeleteBtn').onclick = () => {
+        let classes = SMS.getData('classes'); classes.splice(idx, 1);
+        SMS.setData('classes', classes); closeDeleteModal(); renderClasses();
+        SMS.toast('Class deleted.','warning');
+      };
+    }
+    function closeDeleteModal() { document.getElementById('deleteModal').classList.remove('active'); }
+
+    renderClasses();
+  </script>
+</body>
+</html>

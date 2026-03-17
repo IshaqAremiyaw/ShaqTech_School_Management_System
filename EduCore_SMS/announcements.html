@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ShaqTech International School — Announcements</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body class="app-body">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main-wrap">
+    <header class="topbar" id="topbar"></header>
+    <main class="page-content">
+      <div class="page-header">
+        <div><h2>Announcements</h2><span class="breadcrumb">Dashboard / Announcements</span></div>
+        <button class="btn-primary" onclick="openAnnModal()"><i class="fas fa-plus"></i> New Announcement</button>
+      </div>
+
+      <div class="filter-bar">
+        <div class="search-wrap">
+          <i class="fas fa-search"></i>
+          <input type="text" id="annSearch" placeholder="Search announcements..." oninput="renderAnnouncements()"/>
+        </div>
+        <select id="annCategoryFilter" onchange="renderAnnouncements()">
+          <option value="">All Categories</option>
+          <option>Academic</option><option>Event</option><option>Holiday</option><option>General</option><option>Urgent</option>
+        </select>
+      </div>
+
+      <div id="annGrid" class="ann-grid"></div>
+      <div id="annEmpty" class="empty-state" style="display:none"><i class="fas fa-bullhorn"></i><p>No announcements found.</p></div>
+    </main>
+  </div>
+
+  <div class="modal-overlay" id="annModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="annModalTitle">New Announcement</h3>
+        <button class="modal-close" onclick="closeAnnModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="annForm">
+          <input type="hidden" id="annEditIdx"/>
+          <div class="form-group">
+            <label>Title *</label>
+            <input type="text" id="aTitle" placeholder="Announcement title"/>
+            <span class="err-msg" id="aTitleErr"></span>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Category</label>
+              <select id="aCategory">
+                <option>General</option><option>Academic</option><option>Event</option><option>Holiday</option><option>Urgent</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" id="aDate"/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Content *</label>
+            <textarea id="aContent" rows="5" placeholder="Write announcement content..."></textarea>
+            <span class="err-msg" id="aContentErr"></span>
+          </div>
+          <div class="form-group">
+            <label>Audience</label>
+            <select id="aAudience">
+              <option>All</option><option>Students</option><option>Teachers</option><option>Parents</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeAnnModal()">Cancel</button>
+        <button class="btn-primary" onclick="saveAnnouncement()"><i class="fas fa-paper-plane"></i> Post Announcement</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal modal-sm">
+      <div class="modal-header"><h3>Confirm Delete</h3><button class="modal-close" onclick="closeDeleteModal()"><i class="fas fa-times"></i></button></div>
+      <div class="modal-body"><p>Delete this announcement?</p></div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+        <button class="btn-danger" id="confirmDeleteBtn"><i class="fas fa-trash"></i> Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    SMS.checkAuth(); SMS.applyTheme();
+    SMS.renderSidebar('sidebar','announcements');
+    SMS.renderTopbar('topbar','Announcements');
+
+    document.getElementById('aDate').value = new Date().toISOString().split('T')[0];
+
+    const catColors = { General:'#3b82f6', Academic:'#10b981', Event:'#f59e0b', Holiday:'#8b5cf6', Urgent:'#ef4444' };
+
+    function renderAnnouncements() {
+      const search = document.getElementById('annSearch').value.toLowerCase();
+      const cat = document.getElementById('annCategoryFilter').value;
+      let data = SMS.getData('announcements');
+      if (search) data = data.filter(a => a.title.toLowerCase().includes(search) || a.content.toLowerCase().includes(search));
+      if (cat) data = data.filter(a => a.category === cat);
+      data = data.sort((a,b) => b.date.localeCompare(a.date));
+
+      const grid = document.getElementById('annGrid');
+      grid.innerHTML = '';
+      document.getElementById('annEmpty').style.display = data.length ? 'none' : 'flex';
+
+      data.forEach((a) => {
+        const allAnns = SMS.getData('announcements');
+        const idx = allAnns.findIndex(x => x.title === a.title && x.date === a.date);
+        const color = catColors[a.category] || '#3b82f6';
+        const card = document.createElement('div');
+        card.className = 'ann-card';
+        card.innerHTML = `
+          <div class="ann-card-bar" style="background:${color}"></div>
+          <div class="ann-card-body">
+            <div class="ann-card-top">
+              <span class="ann-cat-badge" style="background:${color}20;color:${color}">${a.category}</span>
+              <div class="action-btns">
+                <button class="btn-edit" onclick="editAnnouncement(${idx})"><i class="fas fa-edit"></i></button>
+                <button class="btn-del" onclick="confirmDelete(${idx})"><i class="fas fa-trash"></i></button>
+              </div>
+            </div>
+            <h3 class="ann-card-title">${a.title}</h3>
+            <p class="ann-card-content">${a.content}</p>
+            <div class="ann-card-footer">
+              <span><i class="fas fa-calendar"></i> ${a.date}</span>
+              <span><i class="fas fa-users"></i> ${a.audience || 'All'}</span>
+            </div>
+          </div>`;
+        grid.appendChild(card);
+      });
+    }
+
+    function openAnnModal(editIdx=null) {
+      document.getElementById('annForm').reset();
+      document.getElementById('aDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('aTitleErr').textContent='';
+      document.getElementById('aContentErr').textContent='';
+      document.getElementById('annEditIdx').value = editIdx !== null ? editIdx : '';
+      document.getElementById('annModalTitle').textContent = editIdx !== null ? 'Edit Announcement' : 'New Announcement';
+      if (editIdx !== null) {
+        const a = SMS.getData('announcements')[editIdx];
+        document.getElementById('aTitle').value = a.title;
+        document.getElementById('aCategory').value = a.category;
+        document.getElementById('aDate').value = a.date;
+        document.getElementById('aContent').value = a.content;
+        document.getElementById('aAudience').value = a.audience || 'All';
+      }
+      document.getElementById('annModal').classList.add('active');
+    }
+
+    function editAnnouncement(idx) { openAnnModal(idx); }
+    function closeAnnModal() { document.getElementById('annModal').classList.remove('active'); }
+
+    function saveAnnouncement() {
+      let valid = true;
+      if (!document.getElementById('aTitle').value.trim()) { document.getElementById('aTitleErr').textContent='Title is required.'; valid=false; } else document.getElementById('aTitleErr').textContent='';
+      if (!document.getElementById('aContent').value.trim()) { document.getElementById('aContentErr').textContent='Content is required.'; valid=false; } else document.getElementById('aContentErr').textContent='';
+      if (!valid) return;
+
+      const ann = {
+        title: document.getElementById('aTitle').value.trim(),
+        category: document.getElementById('aCategory').value,
+        date: document.getElementById('aDate').value,
+        content: document.getElementById('aContent').value.trim(),
+        audience: document.getElementById('aAudience').value
+      };
+      const editIdx = document.getElementById('annEditIdx').value;
+      let anns = SMS.getData('announcements');
+      if (editIdx !== '') { anns[parseInt(editIdx)] = ann; } else { anns.push(ann); }
+      SMS.setData('announcements', anns);
+      closeAnnModal(); renderAnnouncements();
+      SMS.toast(editIdx !== '' ? 'Announcement updated!' : 'Announcement posted!');
+    }
+
+    function confirmDelete(idx) {
+      document.getElementById('deleteModal').classList.add('active');
+      document.getElementById('confirmDeleteBtn').onclick = () => {
+        let anns = SMS.getData('announcements'); anns.splice(idx, 1);
+        SMS.setData('announcements', anns); closeDeleteModal(); renderAnnouncements();
+        SMS.toast('Announcement deleted.','warning');
+      };
+    }
+    function closeDeleteModal() { document.getElementById('deleteModal').classList.remove('active'); }
+
+    renderAnnouncements();
+  </script>
+</body>
+</html>

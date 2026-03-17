@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ShaqTech International School — Attendance</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body class="app-body">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main-wrap">
+    <header class="topbar" id="topbar"></header>
+    <main class="page-content">
+      <div class="page-header">
+        <div><h2>Attendance Management</h2><span class="breadcrumb">Dashboard / Attendance</span></div>
+        <button class="btn-export" onclick="SMS.exportCSV('attendance')"><i class="fas fa-download"></i> Export CSV</button>
+      </div>
+
+      <!-- Mark Attendance Panel -->
+      <div class="att-panel">
+        <div class="att-panel-header">
+          <h3><i class="fas fa-clipboard-check"></i> Mark Attendance</h3>
+        </div>
+        <div class="att-controls">
+          <div class="form-group">
+            <label>Select Class</label>
+            <select id="attClass" onchange="loadStudentsForAttendance()">
+              <option value="">-- Select Class --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="attDate" value=""/>
+          </div>
+          <button class="btn-primary" onclick="saveAttendance()"><i class="fas fa-save"></i> Save Attendance</button>
+        </div>
+
+        <div id="attStudentList" class="att-student-list" style="display:none">
+          <div class="att-list-header">
+            <span>Student</span>
+            <div class="att-bulk-btns">
+              <button class="btn-sm btn-success" onclick="markAll('Present')">Mark All Present</button>
+              <button class="btn-sm btn-danger" onclick="markAll('Absent')">Mark All Absent</button>
+            </div>
+          </div>
+          <div id="attRows"></div>
+        </div>
+        <div id="attNoClass" class="empty-state small" style="display:flex">
+          <i class="fas fa-users"></i><p>Select a class to mark attendance.</p>
+        </div>
+      </div>
+
+      <!-- Attendance Records -->
+      <div class="table-card" style="margin-top:1.5rem">
+        <div class="dash-card-header" style="padding:1rem 1.5rem">
+          <h3><i class="fas fa-history"></i> Attendance Records</h3>
+          <div class="filter-inline">
+            <select id="attRecordClass" onchange="renderAttendanceRecords()">
+              <option value="">All Classes</option>
+            </select>
+            <input type="date" id="attRecordDate" oninput="renderAttendanceRecords()"/>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Date</th><th>Student ID</th><th>Student Name</th><th>Class</th><th>Status</th></tr></thead>
+          <tbody id="attRecordsTbody"></tbody>
+        </table>
+        <div id="attRecordsEmpty" class="empty-state" style="display:none"><i class="fas fa-calendar-check"></i><p>No attendance records yet.</p></div>
+        <div class="table-footer"><span id="attRecordCount">0 records</span></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    SMS.checkAuth(); SMS.applyTheme();
+    SMS.renderSidebar('sidebar','attendance');
+    SMS.renderTopbar('topbar','Attendance Management');
+
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('attDate').value = today;
+
+    // Populate class dropdowns
+    const classes = SMS.getData('classes');
+    [document.getElementById('attClass'), document.getElementById('attRecordClass')].forEach(sel => {
+      classes.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.name; opt.textContent = c.name;
+        sel.appendChild(opt);
+      });
+    });
+
+    function loadStudentsForAttendance() {
+      const cls = document.getElementById('attClass').value;
+      const date = document.getElementById('attDate').value;
+      const noClass = document.getElementById('attNoClass');
+      const list = document.getElementById('attStudentList');
+
+      if (!cls) { noClass.style.display='flex'; list.style.display='none'; return; }
+      const students = SMS.getData('students').filter(s => s.class === cls);
+      if (students.length === 0) { noClass.style.display='flex'; noClass.querySelector('p').textContent='No students in this class.'; list.style.display='none'; return; }
+
+      noClass.style.display='none'; list.style.display='block';
+      const existing = SMS.getData('attendance').filter(a => a.class === cls && a.date === date);
+      const rows = document.getElementById('attRows');
+      rows.innerHTML = '';
+      students.forEach(s => {
+        const existingRecord = existing.find(a => a.studentId === s.id);
+        const status = existingRecord ? existingRecord.status : 'Present';
+        const div = document.createElement('div');
+        div.className = 'att-row';
+        div.innerHTML = `
+          <div class="att-student-info">
+            <div class="avatar-sm">${s.name[0]}</div>
+            <div><strong>${s.name}</strong><small>${s.id}</small></div>
+          </div>
+          <div class="att-status-btns">
+            <label class="radio-btn ${status==='Present'?'active':''}">
+              <input type="radio" name="att_${s.id}" value="Present" ${status==='Present'?'checked':''} onchange="updateStatusBtn(this)"/>
+              <i class="fas fa-check"></i> Present
+            </label>
+            <label class="radio-btn absent ${status==='Absent'?'active':''}">
+              <input type="radio" name="att_${s.id}" value="Absent" ${status==='Absent'?'checked':''} onchange="updateStatusBtn(this)"/>
+              <i class="fas fa-times"></i> Absent
+            </label>
+          </div>`;
+        rows.appendChild(div);
+      });
+    }
+
+    function updateStatusBtn(input) {
+      const name = input.name;
+      document.querySelectorAll(`input[name="${name}"]`).forEach(i => {
+        i.parentElement.classList.toggle('active', i.checked);
+      });
+    }
+
+    function markAll(status) {
+      document.querySelectorAll(`input[type="radio"][value="${status}"]`).forEach(input => {
+        input.checked = true;
+        updateStatusBtn(input);
+      });
+    }
+
+    function saveAttendance() {
+      const cls = document.getElementById('attClass').value;
+      const date = document.getElementById('attDate').value;
+      if (!cls || !date) { SMS.toast('Select class and date first.','warning'); return; }
+
+      const students = SMS.getData('students').filter(s => s.class === cls);
+      if (!students.length) { SMS.toast('No students in this class.','warning'); return; }
+
+      let attendance = SMS.getData('attendance').filter(a => !(a.class === cls && a.date === date));
+      students.forEach(s => {
+        const radio = document.querySelector(`input[name="att_${s.id}"]:checked`);
+        if (radio) attendance.push({ date, class: cls, studentId: s.id, studentName: s.name, status: radio.value });
+      });
+      SMS.setData('attendance', attendance);
+      renderAttendanceRecords();
+      SMS.toast('Attendance saved successfully!');
+    }
+
+    function renderAttendanceRecords() {
+      const cls = document.getElementById('attRecordClass').value;
+      const date = document.getElementById('attRecordDate').value;
+      let data = SMS.getData('attendance');
+      if (cls) data = data.filter(a => a.class === cls);
+      if (date) data = data.filter(a => a.date === date);
+      data = data.sort((a,b) => b.date.localeCompare(a.date));
+
+      const tbody = document.getElementById('attRecordsTbody');
+      tbody.innerHTML = '';
+      document.getElementById('attRecordsEmpty').style.display = data.length ? 'none' : 'flex';
+      document.getElementById('attRecordCount').textContent = data.length + ' record(s)';
+
+      data.forEach(a => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${a.date}</td>
+          <td><span class="id-badge">${a.studentId}</span></td>
+          <td>${a.studentName}</td>
+          <td>${a.class}</td>
+          <td><span class="badge-status ${a.status==='Present'?'active':'danger'}">${a.status}</span></td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    renderAttendanceRecords();
+  </script>
+</body>
+</html>
